@@ -14,15 +14,10 @@ This program retrieves position and velocities data of the ISS from the followin
 ## How to use this project
 
 ### General overview
-No need to download a data set, it will be carried out in the script. First, build the image from the Dockerfile `Dockerfile`. To run the containerized unit tests, use the `docker-compose-test.yml` file. To launch the flask app that you can query, use `docker-compose.yml`. 
+No need to download a data set, it will be carried out in the script. To run the containerized unit tests, use the `docker-compose-test.yml` file. To launch the flask app that you can query, use `docker-compose.yml`. 
 
 ![The structural diagram of this project](structural_diagram.png)
 
-### How to build the image
-In the repository `homework05`, type
-```
-docker build -t flask-app:1.0 ./
-```
 
 ### How to run the containerized unit tests
 In the repository `homework05`, type

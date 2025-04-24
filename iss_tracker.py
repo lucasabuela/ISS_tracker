@@ -25,7 +25,6 @@ def handle_exception(e):
     return str(e), 500
 
 
-# Cette fonction sera ss doute depreciated, où plutôt elle ira dans le container/script? redis
 def load_data():
     """
     This function is used on startup. It checks if there is data in the Redis database.
@@ -34,8 +33,8 @@ def load_data():
     """
     rd = redis.Redis(host="redis-db", port=6379, db=0)
     # We test if there is data in the redis database.
-    If type(rd.get("data_set")) == NoneType: 
-        
+    if isinstance(rd.get("data_set"), type(None)):
+
         response = requests.get(
             url="https://nasa-public-data.s3.amazonaws.com/iss-coords/current/ISS_OEM/ISS.OEM_J2K_EPH.xml"
         )
@@ -49,11 +48,13 @@ def load_data():
         app.data_set = xmltodict.parse(xml_data)  # Convert xml to a dictionary
         logging.debug(f" Data-set = {reprlib.repr(app.data_set)}")
 
-        app.epochs = app.data_set["ndm"]["oem"]["body"]["segment"]["data"]["stateVector"]
+        app.epochs = app.data_set["ndm"]["oem"]["body"]["segment"]["data"][
+            "stateVector"
+        ]
         logging.debug(f" state_vectors = {reprlib.repr(app.epochs)}")
 
-    # We load the data into the Redis database
-    rd.set("data_set", json.dumps(app.data_set))
+        # We load the data into the Redis database
+        rd.set("data_set", json.dumps(app.data_set))
 
 
 def retrieve_data():
@@ -63,6 +64,7 @@ def retrieve_data():
     rd = redis.Redis(host="redis-db", port=6379, db=0)
     app.data_set = json.loads(rd.get(("data_set")))
     app.epochs = app.data_set["ndm"]["oem"]["body"]["segment"]["data"]["stateVector"]
+    logging.info("Successful connection with the Redis database")
 
 
 @app.route("/epochs", methods=["GET"])
@@ -289,7 +291,7 @@ def get_datetime_from_index(state_vectors: list, index: int) -> datetime:
 
 def main():
     # We define an instance of logging
-    logging.basicConfig(level="WARNING")
+    logging.basicConfig(level="INFO")
 
     load_data()
 

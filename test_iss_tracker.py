@@ -1,14 +1,17 @@
+import logging
+from datetime import datetime, timezone
+import json
+import requests
+import numpy as np
+import redis
 from iss_tracker import (
+    retrieve_data,
     data_time_range,
     get_datetime_from_index,
     dich_index_finder,
     epoch_speed,
     closest_epoch,
 )
-import logging
-import requests
-import numpy as np
-from datetime import datetime, timezone
 
 state_vectors1 = [
     {
@@ -52,6 +55,11 @@ state_vectors6 = [
     {"EPOCH": "2025-001T00:00:00.000Z"},
     {"EPOCH": "9999-001T00:00:00.000Z"},
 ]
+
+
+def test_retrieve_data():
+    rd = redis.Redis(host="redis-db", port=6379, db=0)
+    assert isinstance(json.loads(rd.get("data_set")), dict)
 
 
 def test_data_time_range():
