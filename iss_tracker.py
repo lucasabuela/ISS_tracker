@@ -1,19 +1,22 @@
-import requests
-import xmltodict
-import logging
-import numpy as np
 import math
+import logging
 
 # library for not printing entire objects when they are too long
 import reprlib
 from datetime import datetime, timezone
+
+import requests
+import xmltodict
+import numpy as np
+import json
+import redis
 from flask import Flask, request
 
 
 # We create an instance of the Flask class :
 app = Flask(__name__)
 # We modify the logging level of the flask app. It is useful during development but not in production.
-logging.getLogger('werkzeug').setLevel(logging.ERROR)
+logging.getLogger("werkzeug").setLevel(logging.ERROR)
 
 
 # We add a global error handler. This ensures the error message only contains the custom error messages I wrote, and not werkzeug html debugger.
@@ -22,25 +25,44 @@ def handle_exception(e):
     return str(e), 500
 
 
+# Cette fonction sera ss doute depreciated, où plutôt elle ira dans le container/script? redis
 def load_data():
     """
-    This function queries the NASA's API, retrieve the data, convert it to a dictionnary, and add to the Flask app context both the full data and only the state vectors.
+    This function is used on startup. It checks if there is data in the Redis database.
+    If there is data, then no action is taken. If there is no data, then it will retrieve
+    the data from the ISS website and load it into the Redis database.
     """
-    response = requests.get(
-        url="https://nasa-public-data.s3.amazonaws.com/iss-coords/current/ISS_OEM/ISS.OEM_J2K_EPH.xml"
-    )
+    rd = redis.Redis(host="redis-db", port=6379, db=0)
+    # We test if there is data in the redis database.
+    If type(rd.get("data_set")) == NoneType: 
+        
+        response = requests.get(
+            url="https://nasa-public-data.s3.amazonaws.com/iss-coords/current/ISS_OEM/ISS.OEM_J2K_EPH.xml"
+        )
 
-    if response.status_code == 200:
-        logging.info("Data successfully retrieved from NASA's website")
-    else:
-        logging.info("Data not retrieved from NASA's website")
+        if response.status_code == 200:
+            logging.info("Data successfully retrieved from NASA's website")
+        else:
+            logging.info("Data not retrieved from NASA's website")
 
-    xml_data = response.text
-    app.data_set = xmltodict.parse(xml_data)  # Convert xml to a dictionary
-    logging.debug(f" Data-set = {reprlib.repr(app.data_set)}")
+        xml_data = response.text
+        app.data_set = xmltodict.parse(xml_data)  # Convert xml to a dictionary
+        logging.debug(f" Data-set = {reprlib.repr(app.data_set)}")
 
+        app.epochs = app.data_set["ndm"]["oem"]["body"]["segment"]["data"]["stateVector"]
+        logging.debug(f" state_vectors = {reprlib.repr(app.epochs)}")
+
+    # We load the data into the Redis database
+    rd.set("data_set", json.dumps(app.data_set))
+
+
+def retrieve_data():
+    """
+    This function queries the Redis database, retrieve the data, and add to the Flask app context both the full data and only the state vectors.
+    """
+    rd = redis.Redis(host="redis-db", port=6379, db=0)
+    app.data_set = json.loads(rd.get(("data_set")))
     app.epochs = app.data_set["ndm"]["oem"]["body"]["segment"]["data"]["stateVector"]
-    logging.debug(f" state_vectors = {reprlib.repr(app.epochs)}")
 
 
 @app.route("/epochs", methods=["GET"])
@@ -56,6 +78,8 @@ def epochs() -> dict:
         epochs (list): a sub-list of the list of epochs in the dataset
 
     """
+    retrieve_data()
+
     limit = request.args.get("limit", default=len(app.epochs))
     offset = request.args.get("offset", default=0)
 
@@ -86,6 +110,8 @@ def epoch_f(epoch: str) -> dict:
     Returns:
         state_vectors (dict): the desired epoch
     """
+    retrieve_data()
+
     # We first test that the time provided is in the correct format.
     logging.debug(f"epoch={epoch}")
     try:
@@ -115,6 +141,8 @@ def epoch_speed(epoch: str) -> dict:
     Returns:
         speed (float): the speed if the ISS at the time provided, in km/s.
     """
+    retrieve_data()
+
     logging.debug(f"epoch={type(epoch)}")
     _epoch = epoch_f(epoch)
     logging.debug(f"_epoch={_epoch}")
@@ -136,6 +164,8 @@ def now() -> dict:
         closest_epoch (str) : the closest epoch in the dataset to the time at which the program is executed. In the format '%Y-%jT%H:%M:%S.%fZ'. For example: '2025-104T12:20:00.000Z'.
         closest_speed (float): the speed if the ISS at this time, in km/s.
     """
+    retrieve_data()
+
     _closest_epoch = closest_epoch(app.epochs)
     _closest_speed = epoch_speed(_closest_epoch["EPOCH"])["speed"]
     return {"closest_epoch": _closest_epoch["EPOCH"], "closest_speed": _closest_speed}
@@ -146,6 +176,8 @@ def data_time_range():
     """
     This function prints a statement about the range of data in the downloaded dataset.
     """
+    retrieve_data()
+
     start_timestamp = app.data_set["ndm"]["oem"]["body"]["segment"]["metadata"][
         "START_TIME"
     ]
@@ -175,7 +207,6 @@ def closest_epoch(state_vectors: list) -> dict:
     Returns:
         closest_epoch (dict) : the full epoch closest to the time when the program is executed
     """
-
     current_time = datetime.now(timezone.utc)
     logging.debug(f" current_time = {current_time}")
 
