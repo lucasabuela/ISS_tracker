@@ -1,0 +1,26 @@
+---
+version: "3"
+
+services:
+  flask-app:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    image: flask-app:1.0
+    container_name: flask-app
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/now"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+
+  flask-test:
+    image: flask-app:1.0
+    container_name: flask-test
+    depends_on:
+      flask-app:
+        condition: service_healthy
+    entrypoint: ["pytest"]
+...
