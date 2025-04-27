@@ -31,9 +31,9 @@ In the terminal, type
 docker compose -f docker-compose.yml up -d
 ```
 and then you can start curling the flask app with
-'''
+```
 curl localhost:5000/<your route>
-'''
+```
 
 ## AI usage
 Through the completion of this homework, AI was extensively used, and only used, to answer basic syntax questions or understanding and dealing with error messages.
