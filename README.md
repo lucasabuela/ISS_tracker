@@ -1,7 +1,7 @@
 # ISS tracker
 
 ## What does the code in this folder achieve ?
-This program retrieves position and velocities data of the ISS from the following NASA's website : <https://nasa-public-data.s3.amazonaws.com/iss-coords/current/ISS_OEM/ISS.OEM_J2K_EPH.xml>. Then, the program starts a flask app, whose routes returns informations on the dataset. The following routes are present :
+This program retrieves position and velocities data of the ISS from the following NASA's website : <https://nasa-public-data.s3.amazonaws.com/iss-coords/current/ISS_OEM/ISS.OEM_J2K_EPH.xml>.The data is stored in a redis database. A flask app is started, whose routes returns informations on the dataset. The following routes are present :
 
 | Route                           | What it does                                                                 |
 |--------------------------------|-------------------------------------------------------------------------------------|
@@ -20,13 +20,13 @@ No need to download a data set, it will be carried out in the script. To run the
 
 
 ### How to run the containerized unit tests
-In the repository `homework05`, type
+In the terminal, type
 ```
 docker compose -f docker-compose-test.yml up
 ```
 and pytest will launch automatically.
 ### How to run the containerized code
-In the repository `homework05`, type
+In the terminal, type
 ```
 docker compose -f docker-compose.yml up -d
 ```

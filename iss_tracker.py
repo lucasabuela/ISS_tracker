@@ -289,31 +289,6 @@ def get_datetime_from_index(state_vectors: list, index: int) -> datetime:
     return datetime1
 
 
-@app.route("epochs/<epoch>/location", methods=["GET"])
-def location(epoch: str) -> dict:
-    """
-    A flask route endpoint. Returns latitude, longitude, altitude, and geoposition for a given epoch.
-
-    Args:
-        epoch (str): The time of the searched epoch. In the format '%Y-%jT%H:%M:%S.%fZ'. For example: '2025-104T12:20:00.000Z'.
-
-    Returns:
-        location (dict): A dictionary including latitude, longitude, altitude, and geoposition for the epoch.
-
-    """
-
-    latitude = 1
-    longitude = 1
-    altitude = 1
-    geoposition = 1
-    return {
-        "latitude": latitude,
-        "longitude": longitude,
-        "altitude": altitude,
-        "geoposition": geoposition,
-    }
-
-
 def main():
     # We define an instance of logging
     logging.basicConfig(level="INFO")
